@@ -4,14 +4,20 @@ import java.io.StringReader;
 import java.util.Base64;
 import java.util.Base64.Decoder;
 import java.util.Base64.Encoder;
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.context.ApplicationContext;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
+import com.prutech.mailsender.dao.MailTemplateRepository;
 import com.prutech.mailsender.model.MailServerDetails;
+import com.prutech.mailsender.model.MailTemplate;
+import com.prutech.mailsender.model.StatusEnum;
 
 import freemarker.template.Configuration;
 import freemarker.template.Template;
@@ -23,7 +29,12 @@ import freemarker.template.Template;
  */
 public class MailSenderUtil {
 
-	public static ConcurrentHashMap<String, JavaMailSenderImpl> mailSenderMaps = new ConcurrentHashMap<>();
+	public static ConcurrentHashMap<String, MailServerDetails> mailServerDetails = new ConcurrentHashMap<>();
+	public static ConcurrentHashMap<String, JavaMailSenderImpl> mailSenders = new ConcurrentHashMap<>();
+	public static ConcurrentHashMap<String, Date> mailServerDetailsLastModifiedDates = new ConcurrentHashMap<>();
+
+	public static ConcurrentHashMap<String, MailTemplate> templatesMap = new ConcurrentHashMap<>();
+	public static ConcurrentHashMap<String, Date> templatesLastModifiedDates = new ConcurrentHashMap<>();
 
 	public static JavaMailSenderImpl createMailSender(MailServerDetails mailServerDetails) {
 
@@ -103,5 +114,21 @@ public class MailSenderUtil {
 				model);
 
 		return replacedHtmlContent;
+	}
+
+	public static void storeAllOrganizationTemplates(String organizationId, ApplicationContext applicationContext) {
+		System.out.println("MailSenderUtil.storeAllOrganizationTemplates()...organizationId:" + organizationId);
+
+		MailTemplateRepository mailTemplateRepository = applicationContext.getBean(MailTemplateRepository.class);
+		System.out.println(
+				"MailSenderUtil.storeAllOrganizationTemplates()...mailTemplateRepository:" + mailTemplateRepository);
+		List<MailTemplate> allOrganizationTemplates = mailTemplateRepository
+				.findByOrganizationIdAndStatus(organizationId, StatusEnum.ACTIVE.getStatusCode());
+		for (MailTemplate eachActiveTemplate : allOrganizationTemplates) {
+
+			templatesMap.put(organizationId + "|" + eachActiveTemplate.getAction(), eachActiveTemplate);
+			templatesLastModifiedDates.put(organizationId + "|" + eachActiveTemplate.getAction(),
+					eachActiveTemplate.getLastModifiedDate());
+		}
 	}
 }

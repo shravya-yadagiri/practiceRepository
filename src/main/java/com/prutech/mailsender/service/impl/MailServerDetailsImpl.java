@@ -31,6 +31,7 @@ public class MailServerDetailsImpl implements MailServerDetailsService {
 		}
 		mailServerDetails.setStatus(StatusEnum.ACTIVE.getStatusCode());
 		mailServerDetails.setCreatedDate(new Date());
+		mailServerDetails.setLastModifiedDate(new Date());
 		mailServerDetailsRepository.save(mailServerDetails);
 		mailServerDetails.appendData(new ResponseData("status", "success"));
 		return mailServerDetails;

@@ -1,7 +1,6 @@
 package com.prutech.mailsender.service.impl;
 
 import java.util.Date;
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +32,7 @@ public class MailTemplateServiceImpl implements MailTemplateService {
 		}
 		mailTemplate.setStatus(StatusEnum.ACTIVE.getStatusCode());
 		mailTemplate.setCreatedDate(new Date());
+		mailTemplate.setLastModifiedDate(new Date());
 		mailTemplateRepository.save(mailTemplate);
 		mailTemplate.appendData(new ResponseData("status", "success"));
 		return mailTemplate;
@@ -76,7 +76,6 @@ public class MailTemplateServiceImpl implements MailTemplateService {
 		}
 		return mailTemplate;
 	}
-
 
 	/*
 	 * (non-Javadoc)

@@ -1,5 +1,6 @@
 package com.prutech.mailsender.service.impl;
 
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +62,10 @@ public class MailSenderServiceImpl implements MailSenderService {
 			Map<String, Object> model = mailSenderDTO.getModel();
 			System.out.println("MailSenderServiceImpl.sendMail()...model:" + model);
 
+			/**
+			 * Need to check the last modified date and store fresh one if new exists
+			 */
+
 			mailServerDetails = getMailServerDetailsOfOrganization(organizationId);
 			System.out.println("MailSenderServiceImpl.sendMail()...mailServerDetails:" + mailServerDetails);
 
@@ -69,13 +74,8 @@ public class MailSenderServiceImpl implements MailSenderService {
 
 			if (mailServerDetails != null && mailTemplate != null) {
 
-				if (!MailSenderUtil.mailSenderMaps.containsKey(organizationId)) {
-					MailSenderUtil.mailSenderMaps.put(organizationId,
-							MailSenderUtil.createMailSender(mailServerDetails));
-				}
-
-				if (MailSenderUtil.mailSenderMaps.containsKey(organizationId)) {
-					mailSender = MailSenderUtil.mailSenderMaps.get(organizationId);
+				if (MailSenderUtil.mailSenders.containsKey(organizationId)) {
+					mailSender = MailSenderUtil.mailSenders.get(organizationId);
 				}
 				System.out.println("MailSenderServiceImpl.sendMail()...mailSender:" + mailSender);
 
@@ -111,23 +111,13 @@ public class MailSenderServiceImpl implements MailSenderService {
 	}
 
 	public MailServerDetails getMailServerDetailsOfOrganization(String organizationId) {
-		MailServerDetails mailServerDetails = null;
-		Optional<MailServerDetails> mailServerDetailsOptional = mailServerDetailsService
-				.getMailServerDetailsByOrganizationId(organizationId);
-		if (mailServerDetailsOptional.isPresent()) {
-			mailServerDetails = mailServerDetailsOptional.get();
-		}
-		return mailServerDetails;
+		checkAndStoreFreshMailServerDetails(organizationId);
+		return MailSenderUtil.mailServerDetails.get(organizationId);
 	}
 
 	public MailTemplate getTemplateDetails(String action, String organizationId) {
-		MailTemplate mailTemplate = null;
-		Optional<MailTemplate> templateOptional = mailTemplateService.getTemplateByActionAndOrganizationId(action,
-				organizationId);
-		if (templateOptional.isPresent()) {
-			mailTemplate = templateOptional.get();
-		}
-		return mailTemplate;
+		checkAndStoreFreshMailTemplate(organizationId, action);
+		return MailSenderUtil.templatesMap.get(organizationId + "|" + action);
 	}
 
 	public void setAllPropertiesAndSendMail(String organizationId, String action, Map<String, Object> model,
@@ -326,12 +316,12 @@ public class MailSenderServiceImpl implements MailSenderService {
 			MailTemplate mailTemplate = getTemplateDetails(action, organizationId);
 			System.out.println("MailSenderServiceImpl.sendMail()...mailTemplate:" + mailTemplate);
 
-			if (!MailSenderUtil.mailSenderMaps.containsKey(organizationId)) {
-				MailSenderUtil.mailSenderMaps.put(organizationId, MailSenderUtil.createMailSender(mailServerDetails));
+			if (!MailSenderUtil.mailSenders.containsKey(organizationId)) {
+				MailSenderUtil.mailSenders.put(organizationId, MailSenderUtil.createMailSender(mailServerDetails));
 			}
 
-			if (MailSenderUtil.mailSenderMaps.containsKey(organizationId)) {
-				mailSender = MailSenderUtil.mailSenderMaps.get(organizationId);
+			if (MailSenderUtil.mailSenders.containsKey(organizationId)) {
+				mailSender = MailSenderUtil.mailSenders.get(organizationId);
 			}
 
 			message = mailSender.createMimeMessage();
@@ -363,6 +353,59 @@ public class MailSenderServiceImpl implements MailSenderService {
 			insertMailAuditLog(organizationId, action, mailToAddressString, mailSentHeader, mailSubject, mailBody,
 					null);
 		}
+	}
 
+	public void checkAndStoreFreshMailServerDetails(String organizationId) {
+		Optional<MailServerDetails> mailServerDetailsOptional = mailServerDetailsService
+				.getMailServerDetailsByOrganizationId(organizationId);
+		if (mailServerDetailsOptional.isPresent()) {
+			MailServerDetails mailServerDetails = mailServerDetailsOptional.get();
+
+			if (MailSenderUtil.mailServerDetailsLastModifiedDates.containsKey(organizationId)
+					&& !(MailSenderUtil.mailServerDetailsLastModifiedDates.get(organizationId)
+							.equals(mailServerDetails.getLastModifiedDate()))
+					|| !MailSenderUtil.mailServerDetailsLastModifiedDates.containsKey(organizationId)) {
+
+				// Storing fresh MailServerDetails
+				MailSenderUtil.mailServerDetails.put(organizationId, mailServerDetails);
+
+				// Storing fresh JavaMailSenderImpl
+				MailSenderUtil.mailSenders.put(mailServerDetails.getOrganizationId(),
+						MailSenderUtil.createMailSender(mailServerDetails));
+
+				// Storing fresh last modified date
+				MailSenderUtil.mailServerDetailsLastModifiedDates.put(mailServerDetails.getOrganizationId(),
+						mailServerDetails.getLastModifiedDate());
+			}
+		}
+	}
+
+	public void checkAndStoreFreshMailTemplate(String organizationId, String action) {
+		Optional<MailTemplate> mailTemplateOptional = mailTemplateService.getTemplateByActionAndOrganizationId(action,
+				organizationId);
+		if (mailTemplateOptional.isPresent()) {
+			MailTemplate mailTempalte = mailTemplateOptional.get();
+
+			System.out.println("MailSenderServiceImpl.checkAndStoreFreshMailTemplate()...mailTempalte:" + mailTempalte);
+			System.out.println("MailSenderServiceImpl.checkAndStoreFreshMailTemplate()...mailTempalte.getLastModifiedDate():" + mailTempalte.getLastModifiedDate());
+			System.out.println("MailSenderServiceImpl.checkAndStoreFreshMailTemplate()...MailSenderUtil.templatesMap:"
+					+ MailSenderUtil.templatesMap);
+			System.out.println(
+					"MailSenderServiceImpl.checkAndStoreFreshMailTemplate()...MailSenderUtil.mailServerDetailsLastModifiedDates:"
+							+ MailSenderUtil.mailServerDetailsLastModifiedDates);
+
+			if (MailSenderUtil.templatesLastModifiedDates.containsKey(organizationId + "|" + action)
+					&& !(MailSenderUtil.templatesLastModifiedDates.get(organizationId + "|" + action)
+							.equals(mailTempalte.getLastModifiedDate()))
+					|| !MailSenderUtil.templatesLastModifiedDates.containsKey(organizationId + "|" + action)) {
+
+				// Storing fresh MailTemplate
+				MailSenderUtil.templatesMap.put(organizationId + "|" + action, mailTempalte);
+
+				// Storing fresh last modified date
+				MailSenderUtil.templatesLastModifiedDates.put(organizationId + "|" + action,
+						mailTempalte.getLastModifiedDate());
+			}
+		}
 	}
 }
