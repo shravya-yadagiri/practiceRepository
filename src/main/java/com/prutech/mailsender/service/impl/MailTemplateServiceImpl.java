@@ -13,7 +13,6 @@ import com.prutech.mailsender.model.MailTemplate;
 import com.prutech.mailsender.model.ResponseData;
 import com.prutech.mailsender.model.StatusEnum;
 import com.prutech.mailsender.service.MailTemplateService;
-import com.prutech.mailsender.util.MailSenderUtil;
 
 @Service
 public class MailTemplateServiceImpl implements MailTemplateService {
@@ -25,10 +24,10 @@ public class MailTemplateServiceImpl implements MailTemplateService {
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public MailTemplate saveTemplate(MailTemplate mailTemplate) {
 		if (mailTemplate.getMailSubject() != null) {
-			mailTemplate.setMailSubject(MailSenderUtil.encodeStringUsingBase64(mailTemplate.getMailSubject()));
+			mailTemplate.setMailSubject(mailTemplate.getMailSubject());
 		}
 		if (mailTemplate.getMailBody() != null) {
-			mailTemplate.setMailBody(MailSenderUtil.encodeStringUsingBase64(mailTemplate.getMailBody()));
+			mailTemplate.setMailBody(mailTemplate.getMailBody());
 		}
 		mailTemplate.setStatus(StatusEnum.ACTIVE.getStatusCode());
 		mailTemplate.setCreatedDate(new Date());

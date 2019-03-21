@@ -42,15 +42,19 @@ public class MailAuditLog extends BaseEntity implements IGenericEntity {
 	//
 	@NotNull
 	private String action;
-
+	
 	//
 	@NotNull
+	@Column(columnDefinition = "MEDIUMTEXT CHARACTER SET utf8mb4")
+	@Size(min = 1, max = 10000, message = " you must use between 1 and 10000 characters")
+	private String model;
+
+	//
 	@Column(columnDefinition = "TINYTEXT CHARACTER SET utf8mb4")
 	@Size(min = 1, max = 255, message = " you must use between 1 and 255 characters")
 	private String mailSubject;
 
 	//
-	@NotNull
 	@Column(columnDefinition = "MEDIUMTEXT CHARACTER SET utf8mb4")
 	@Size(min = 1, max = 10000, message = " you must use between 1 and 10000 characters")
 	private String mailBody;

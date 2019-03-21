@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.prutech.mailsender.dto.MailSenderDTO;
 import com.prutech.mailsender.service.MailSenderService;
 
@@ -17,7 +18,7 @@ public class MailSenderController {
 	MailSenderService mailSenderService;
 
 	@RequestMapping(value = "/sendMail", method = RequestMethod.POST)
-	public MailSenderDTO sendSimpleMail(@RequestBody MailSenderDTO mailSenderDTO) {
+	public MailSenderDTO sendSimpleMail(@RequestBody MailSenderDTO mailSenderDTO) throws JsonProcessingException {
 		return mailSenderService.sendMail(mailSenderDTO);
 	}
 }

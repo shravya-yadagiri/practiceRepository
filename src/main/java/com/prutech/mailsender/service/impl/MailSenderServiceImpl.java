@@ -1,6 +1,5 @@
 package com.prutech.mailsender.service.impl;
 
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +14,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.prutech.mailsender.dto.MailSenderDTO;
 import com.prutech.mailsender.model.MailAuditLog;
 import com.prutech.mailsender.model.MailRecovery;
@@ -45,28 +45,32 @@ public class MailSenderServiceImpl implements MailSenderService {
 	private MailRecoveryService mailRecoveryService;
 
 	@Async
-	public MailSenderDTO sendMail(MailSenderDTO mailSenderDTO) {
+	public MailSenderDTO sendMail(MailSenderDTO mailSenderDTO) throws JsonProcessingException {
 
 		MailServerDetails mailServerDetails = null;
 		MailTemplate mailTemplate = null;
 		JavaMailSenderImpl mailSender = null;
 
+		String organizationId = null;
+		String action = null;
+		Map<String, Object> model = null;
+
 		try {
 
-			String organizationId = mailSenderDTO.getOrganizationId();
+			organizationId = mailSenderDTO.getOrganizationId();
 			System.out.println("MailSenderServiceImpl.sendMail()...organizationId:" + organizationId);
 
-			String action = mailSenderDTO.getAction();
+			action = mailSenderDTO.getAction();
 			System.out.println("MailSenderServiceImpl.sendMail()...action:" + action);
 
-			Map<String, Object> model = mailSenderDTO.getModel();
+			model = mailSenderDTO.getModel();
 			System.out.println("MailSenderServiceImpl.sendMail()...model:" + model);
 
 			/**
 			 * Need to check the last modified date and store fresh one if new exists
 			 */
 
-			mailServerDetails = getMailServerDetailsOfOrganization(organizationId);
+			mailServerDetails = getMailServerDetails(organizationId);
 			System.out.println("MailSenderServiceImpl.sendMail()...mailServerDetails:" + mailServerDetails);
 
 			mailTemplate = getTemplateDetails(action, organizationId);
@@ -84,33 +88,39 @@ public class MailSenderServiceImpl implements MailSenderService {
 					if (mailToAddress != null && mailToAddress.size() > 0) {
 						setAllPropertiesAndSendMail(organizationId, action, model, mailTemplate, mailServerDetails,
 								mailSender);
+						mailSenderDTO.appendData(new ResponseData("status", "success"));
 					} else {
-						insertMailAuditLog(organizationId, action, null, null,
+						insertMailAuditLog(organizationId, action, model, null, null,
 								MailSenderUtil.decodeStringUsingBase64(mailTemplate.getMailSubject()),
 								MailSenderUtil.decodeStringUsingBase64(mailTemplate.getMailBody()),
 								"To field is not specified");
+						insertIntoMailRecovery(organizationId, action, model, "To field is not specified");
+						mailSenderDTO.appendData(new ResponseData("status", "failed"));
 					}
 				} else {
-					insertMailAuditLog(organizationId, action, null, null,
+					insertMailAuditLog(organizationId, action, model, null, null,
 							MailSenderUtil.decodeStringUsingBase64(mailTemplate.getMailSubject()),
 							MailSenderUtil.decodeStringUsingBase64(mailTemplate.getMailBody()),
 							"To field is not specified");
+					insertIntoMailRecovery(organizationId, action, model, "To field is not specified");
+					mailSenderDTO.appendData(new ResponseData("status", "failed"));
 				}
-				mailSenderDTO.appendData(new ResponseData("status", "success"));
 			} else {
-				insertMailAuditLog(organizationId, action, null, null,
-						MailSenderUtil.decodeStringUsingBase64(mailTemplate.getMailSubject()),
-						MailSenderUtil.decodeStringUsingBase64(mailTemplate.getMailBody()),
+				insertMailAuditLog(organizationId, action, model, null, null, null, null,
 						"Mail Server Details/Template details are not available");
+				insertIntoMailRecovery(organizationId, action, model,
+						"Mail Server Details/Template details are not available");
+				mailSenderDTO.appendData(new ResponseData("status", "failed"));
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			insertIntoMailRecovery(organizationId, action, model, e.getMessage());
 			mailSenderDTO.appendData(new ResponseData("status", "failed"));
 		}
 		return mailSenderDTO;
 	}
 
-	public MailServerDetails getMailServerDetailsOfOrganization(String organizationId) {
+	public MailServerDetails getMailServerDetails(String organizationId) {
 		checkAndStoreFreshMailServerDetails(organizationId);
 		return MailSenderUtil.mailServerDetails.get(organizationId);
 	}
@@ -121,7 +131,8 @@ public class MailSenderServiceImpl implements MailSenderService {
 	}
 
 	public void setAllPropertiesAndSendMail(String organizationId, String action, Map<String, Object> model,
-			MailTemplate mailTemplate, MailServerDetails mailServerDetails, JavaMailSenderImpl mailSender) {
+			MailTemplate mailTemplate, MailServerDetails mailServerDetails, JavaMailSenderImpl mailSender)
+			throws JsonProcessingException {
 
 		MimeMessage message = null;
 		MimeMessageHelper helper = null;
@@ -145,38 +156,38 @@ public class MailSenderServiceImpl implements MailSenderService {
 				if (model.get("toAddress") != null) {
 					mailToAddress = (List<String>) model.get("toAddress");
 				}
-				System.out.println("MailSenderServiceImpl.sendMail()...mailToAddress:" + mailToAddress);
+				System.out.println("MailSenderServiceImpl.setAllPropertiesAndSendMail()...mailToAddress:" + mailToAddress);
 
 				// Cc
 				if (mailTemplate.getMailCc() != null && mailTemplate.getMailCc().trim().length() > 0) {
 					mailCc = mailTemplate.getMailCc();
 				}
-				System.out.println("MailSenderServiceImpl.sendMail()...mailCc:" + mailCc);
+				System.out.println("MailSenderServiceImpl.setAllPropertiesAndSendMail()...mailCc:" + mailCc);
 
 				// Bcc
 				if (mailTemplate.getMailBcc() != null && mailTemplate.getMailBcc().trim().length() > 0) {
 					mailBcc = mailTemplate.getMailBcc();
 				}
-				System.out.println("MailSenderServiceImpl.sendMail()...mailBcc:" + mailBcc);
+				System.out.println("MailSenderServiceImpl.setAllPropertiesAndSendMail()...mailBcc:" + mailBcc);
 
 				// From
 				if (mailServerDetails.getMailFromMailId() != null
 						&& mailServerDetails.getMailFromMailId().trim().length() > 0) {
 					mailFrom = mailServerDetails.getMailFromMailId();
 				}
-				System.out.println("MailSenderServiceImpl.sendMail()...mailFrom:" + mailFrom);
+				System.out.println("MailSenderServiceImpl.setAllPropertiesAndSendMail()...mailFrom:" + mailFrom);
 
 				// Subject
 				if (mailTemplate.getMailSubject() != null && mailTemplate.getMailSubject().trim().length() > 0) {
 					mailSubject = MailSenderUtil.getReplacedHtmlContent(mailTemplate.getMailSubject(), model);
 				}
-				System.out.println("MailSenderServiceImpl.sendMail()...mailSubject:" + mailSubject);
+				System.out.println("MailSenderServiceImpl.setAllPropertiesAndSendMail()...mailSubject:" + mailSubject);
 
 				// Body
 				if (mailTemplate.getMailBody() != null && mailTemplate.getMailBody().trim().length() > 0) {
 					mailBody = MailSenderUtil.getReplacedHtmlContent(mailTemplate.getMailBody(), model);
 				}
-				System.out.println("MailSenderServiceImpl.sendMail()...mailBody:" + mailBody);
+				System.out.println("MailSenderServiceImpl.setAllPropertiesAndSendMail()...mailBody:" + mailBody);
 			}
 
 			setPropertiesForHelper(helper, mailToAddress.toArray(new String[0]), mailCc, mailBcc, mailFrom, mailSubject,
@@ -185,7 +196,7 @@ public class MailSenderServiceImpl implements MailSenderService {
 			mailSender.send(message);
 
 			mailSentHeader = prepareMailSentHeader(message);
-			System.out.println("MailSenderServiceImpl.sendMail()...mailSentHeader:" + mailSentHeader);
+			System.out.println("MailSenderServiceImpl.setAllPropertiesAndSendMail()...mailSentHeader:" + mailSentHeader);
 
 			if (mailToAddress != null && mailToAddress.size() > 0) {
 				mailToAddressString = "";
@@ -198,11 +209,8 @@ public class MailSenderServiceImpl implements MailSenderService {
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
-			insertMailAuditLog(organizationId, action, mailToAddressString, mailSentHeader, mailSubject, mailBody,
-					null);
-
-			insertMailRecovery(organizationId, action, mailSubject, mailBody, mailFrom, mailToAddressString, mailCc,
-					mailBcc, null);
+			insertMailAuditLog(organizationId, action, model, mailToAddressString, mailSentHeader, mailSubject,
+					mailBody, null);
 		}
 	}
 
@@ -222,18 +230,15 @@ public class MailSenderServiceImpl implements MailSenderService {
 		}
 	}
 
-	public void insertMailAuditLog(String organizationId, String action, String mailToAddress, String mailSentHeader,
-			String mailSubject, String mailBody, String comments) {
+	public void insertMailAuditLog(String organizationId, String action, Map<String, Object> model,
+			String mailToAddress, String mailSentHeader, String mailSubject, String mailBody, String comments)
+			throws JsonProcessingException {
 		MailAuditLog mailAuditLog = new MailAuditLog();
 
 		mailAuditLog.setOrganizationId(organizationId);
 		mailAuditLog.setAction(action);
-		/* mailAuditLog.setMailFrom(mailFrom); */
+		mailAuditLog.setModel(MailSenderUtil.convertObjectToJson(model));
 		mailAuditLog.setMailToAddress(mailToAddress);
-
-		/*
-		 * mailAuditLog.setMailCc(mailCc); mailAuditLog.setMailBcc(mailBcc);
-		 */
 		mailAuditLog.setMailSentHeader(mailSentHeader);
 		mailAuditLog.setMailSubject(mailSubject);
 		mailAuditLog.setMailBody(mailBody);
@@ -244,18 +249,13 @@ public class MailSenderServiceImpl implements MailSenderService {
 		mailAuditLogService.saveMailAuditLog(mailAuditLog);
 	}
 
-	public void insertMailRecovery(String organizationId, String action, String mailSubject, String mailBody,
-			String mailFrom, String mailToAddress, String mailCc, String mailBcc, String comments) {
+	public void insertIntoMailRecovery(String organizationId, String action, Map<String, Object> model, String comments)
+			throws JsonProcessingException {
 
 		MailRecovery mailRecovery = new MailRecovery();
 		mailRecovery.setOrganizationId(organizationId);
 		mailRecovery.setAction(action);
-		mailRecovery.setMailSubject(mailSubject);
-		mailRecovery.setMailBody(mailBody);
-		mailRecovery.setMailFrom(mailFrom);
-		mailRecovery.setMailToAddress(mailToAddress);
-		mailRecovery.setMailCc(mailCc);
-		mailRecovery.setMailBcc(mailBcc);
+		mailRecovery.setModel(MailSenderUtil.convertObjectToJson(model));
 		mailRecovery.setComments(comments);
 		mailRecovery.setStatus(StatusEnum.ACTIVE.getStatusCode());
 
@@ -269,13 +269,6 @@ public class MailSenderServiceImpl implements MailSenderService {
 	 * com.prutech.mailsender.service.MailSenderService#sendMailUsingRecovery(com.
 	 * prutech.mailsender.model.MailRecovery)
 	 */
-	@Override
-	public void sendMailUsingRecovery(MailRecovery mailRecovery) {
-
-		setAllPropertiesAndSendRecoveryMail(mailRecovery.getOrganizationId(), mailRecovery.getAction(), mailRecovery);
-
-	}
-
 	public String prepareMailSentHeader(MimeMessage message) {
 		String mailSentHeader = null;
 		try {
@@ -289,70 +282,12 @@ public class MailSenderServiceImpl implements MailSenderService {
 				mailSentHeader = messageHeaderFullMessage.toString();
 			}
 
-			System.out.println("MailSenderServiceImpl.sendMail()...mailSentHeader:" + mailSentHeader);
 		} catch (MessagingException e) {
 			e.printStackTrace();
 		}
 
 		return mailSentHeader;
 
-	}
-
-	public void setAllPropertiesAndSendRecoveryMail(String organizationId, String action, MailRecovery mailRecovery) {
-
-		MimeMessage message = null;
-		MimeMessageHelper helper = null;
-		JavaMailSenderImpl mailSender = null;
-
-		String mailToAddressString = null;
-		String mailSentHeader = null;
-		String mailSubject = null;
-		String mailBody = null;
-
-		try {
-			MailServerDetails mailServerDetails = getMailServerDetailsOfOrganization(organizationId);
-			System.out.println("MailSenderServiceImpl.sendMail()...mailServerDetails:" + mailServerDetails);
-
-			MailTemplate mailTemplate = getTemplateDetails(action, organizationId);
-			System.out.println("MailSenderServiceImpl.sendMail()...mailTemplate:" + mailTemplate);
-
-			if (!MailSenderUtil.mailSenders.containsKey(organizationId)) {
-				MailSenderUtil.mailSenders.put(organizationId, MailSenderUtil.createMailSender(mailServerDetails));
-			}
-
-			if (MailSenderUtil.mailSenders.containsKey(organizationId)) {
-				mailSender = MailSenderUtil.mailSenders.get(organizationId);
-			}
-
-			message = mailSender.createMimeMessage();
-			helper = new MimeMessageHelper(message, true);
-
-			String mailToAddress = mailRecovery.getMailToAddress();
-			String[] allMailAddresses = mailToAddress.split(",");
-
-			mailSubject = mailRecovery.getMailSubject();
-			mailBody = mailRecovery.getMailBody();
-
-			setPropertiesForHelper(helper, allMailAddresses, mailRecovery.getMailCc(), mailRecovery.getMailBcc(),
-					mailRecovery.getMailFrom(), mailRecovery.getMailSubject(), mailRecovery.getMailBody());
-
-			mailSender.send(message);
-
-			mailSentHeader = prepareMailSentHeader(message);
-			System.out.println("MailSenderServiceImpl.sendMail()...mailSentHeader:" + mailSentHeader);
-
-			if (allMailAddresses != null && allMailAddresses.length > 0) {
-				mailToAddressString = "";
-				for (String eachMailId : allMailAddresses) {
-					mailToAddressString = mailToAddressString + eachMailId;
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			insertMailAuditLog(organizationId, action, mailToAddressString, mailSentHeader, mailSubject, mailBody,
-					null);
-		}
 	}
 
 	public void checkAndStoreFreshMailServerDetails(String organizationId) {
@@ -385,14 +320,6 @@ public class MailSenderServiceImpl implements MailSenderService {
 				organizationId);
 		if (mailTemplateOptional.isPresent()) {
 			MailTemplate mailTempalte = mailTemplateOptional.get();
-
-			System.out.println("MailSenderServiceImpl.checkAndStoreFreshMailTemplate()...mailTempalte:" + mailTempalte);
-			System.out.println("MailSenderServiceImpl.checkAndStoreFreshMailTemplate()...mailTempalte.getLastModifiedDate():" + mailTempalte.getLastModifiedDate());
-			System.out.println("MailSenderServiceImpl.checkAndStoreFreshMailTemplate()...MailSenderUtil.templatesMap:"
-					+ MailSenderUtil.templatesMap);
-			System.out.println(
-					"MailSenderServiceImpl.checkAndStoreFreshMailTemplate()...MailSenderUtil.mailServerDetailsLastModifiedDates:"
-							+ MailSenderUtil.mailServerDetailsLastModifiedDates);
 
 			if (MailSenderUtil.templatesLastModifiedDates.containsKey(organizationId + "|" + action)
 					&& !(MailSenderUtil.templatesLastModifiedDates.get(organizationId + "|" + action)

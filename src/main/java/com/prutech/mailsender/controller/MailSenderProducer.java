@@ -23,12 +23,8 @@ public class MailSenderProducer {
 
 	@RequestMapping(value = "/sendSimpleMail", method = RequestMethod.POST)
 	public String sendSimpleMail(@RequestBody MailSenderDTO mailSenderDTO) {
-
 		jmsTemplate.convertAndSend(mailSenderQueue, mailSenderDTO);
-		
 		System.out.println("MailSenderProducer.sendSimpleMail()...added to queue!");
-
 		return "Added to queue successfully.";
-
 	}
 }

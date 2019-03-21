@@ -4,7 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
-import com.prutech.mailsender.model.MailRecovery;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.prutech.mailsender.dto.MailSenderDTO;
 import com.prutech.mailsender.service.MailSenderService;
 
 @Component
@@ -14,8 +15,8 @@ public class MailRecoveryConsumer {
 	MailSenderService mailSenderService;
 
 	@JmsListener(destination = "${activemq.recoverymails-queue}")
-	public void listener(MailRecovery mailRecovery) {
-		mailSenderService.sendMailUsingRecovery(mailRecovery);
+	public void listener(MailSenderDTO mailSenderDTO) throws JsonProcessingException {
+		mailSenderService.sendMail(mailSenderDTO);
 		System.out.println("MailRecoveryConsumer.listener()...called sendMailUsingRecovery.");
 	}
 }

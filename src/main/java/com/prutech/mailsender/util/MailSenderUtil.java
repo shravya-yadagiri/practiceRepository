@@ -1,5 +1,6 @@
 package com.prutech.mailsender.util;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.util.Base64;
 import java.util.Base64.Decoder;
@@ -14,6 +15,10 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.prutech.mailsender.dao.MailTemplateRepository;
 import com.prutech.mailsender.model.MailServerDetails;
 import com.prutech.mailsender.model.MailTemplate;
@@ -130,5 +135,15 @@ public class MailSenderUtil {
 			templatesLastModifiedDates.put(organizationId + "|" + eachActiveTemplate.getAction(),
 					eachActiveTemplate.getLastModifiedDate());
 		}
+	}
+
+	public static String convertObjectToJson(Object object) throws JsonProcessingException {
+		ObjectMapper mapper = new ObjectMapper();
+		return mapper.writeValueAsString(object);
+	}
+
+	public static Object convertJsonToObject(String string) throws JsonParseException, JsonMappingException, IOException {
+		ObjectMapper mapper = new ObjectMapper();
+		return mapper.readValue(string, Object.class);
 	}
 }

@@ -81,8 +81,4 @@ public class MailSenderApplication {
 		}
 	}
 
-	/*
-	 * @Bean SpringContextProvider springContextProvider() { return new
-	 * SpringContextProvider(); }
-	 */
 }

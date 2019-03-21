@@ -1,15 +1,10 @@
 package com.prutech.mailsender.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.prutech.mailsender.dto.MailSenderDTO;
-import com.prutech.mailsender.model.MailRecovery;
 
 public interface MailSenderService {
 
-	public MailSenderDTO sendMail(MailSenderDTO mailSenderDTO);
-
-	/**
-	 * @param mailRecovery
-	 */
-	public void sendMailUsingRecovery(MailRecovery mailRecovery);
+	public MailSenderDTO sendMail(MailSenderDTO mailSenderDTO) throws JsonProcessingException;
 
 }

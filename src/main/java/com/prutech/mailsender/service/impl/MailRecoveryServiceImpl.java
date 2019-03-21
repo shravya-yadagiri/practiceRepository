@@ -1,7 +1,9 @@
 package com.prutech.mailsender.service.impl;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import javax.jms.Queue;
 
@@ -11,10 +13,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.prutech.mailsender.dao.MailRecoveryRepository;
+import com.prutech.mailsender.dto.MailSenderDTO;
 import com.prutech.mailsender.model.MailRecovery;
 import com.prutech.mailsender.model.ResponseData;
 import com.prutech.mailsender.service.MailRecoveryService;
+import com.prutech.mailsender.util.MailSenderUtil;
 
 @Service
 public class MailRecoveryServiceImpl implements MailRecoveryService {
@@ -45,11 +51,19 @@ public class MailRecoveryServiceImpl implements MailRecoveryService {
 	 */
 	@Override
 	@Transactional
-	public void saveAllRecoveryMailsIntoActiveMQ() {
-		List<MailRecovery> allMailRecovery = mailRecoveryRepository.findAll();
+	public void saveAllRecoveryMailsIntoActiveMQ() throws JsonParseException, JsonMappingException, IOException {
+		List<MailRecovery> allMailRecoveries = mailRecoveryRepository.findAll();
 
-		for (MailRecovery eachMailRecovery : allMailRecovery) {
-			jmsTemplate.convertAndSend(recoveryMailsQueue, eachMailRecovery);
+		for (MailRecovery eachMailRecovery : allMailRecoveries) {
+
+			MailSenderDTO mailSenderDTO = new MailSenderDTO();
+			mailSenderDTO.setOrganizationId(eachMailRecovery.getOrganizationId());
+			mailSenderDTO.setAction(eachMailRecovery.getAction());
+			Map<String, Object> model = (Map<String, Object>) MailSenderUtil
+					.convertJsonToObject(eachMailRecovery.getModel());
+			System.out.println("MailRecoveryServiceImpl.saveAllRecoveryMailsIntoActiveMQ()...model:" + model);
+			mailSenderDTO.setModel(model);
+			jmsTemplate.convertAndSend(recoveryMailsQueue, mailSenderDTO);
 		}
 		System.out.println(
 				"MailRecoveryServiceImpl.saveAllRecoveryMailsIntoActiveMQ()...added all recovery mails to Active MQ");

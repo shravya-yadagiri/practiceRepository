@@ -45,33 +45,10 @@ public class MailRecovery extends BaseEntity implements IGenericEntity {
 
 	//
 	@NotNull
-	@Column(columnDefinition = "TINYTEXT CHARACTER SET utf8mb4")
-	@Size(min = 1, max = 255, message = " you must use between 1 and 255 characters")
-	private String mailSubject;
-
-	//
-	@NotNull
 	@Column(columnDefinition = "MEDIUMTEXT CHARACTER SET utf8mb4")
 	@Size(min = 1, max = 10000, message = " you must use between 1 and 10000 characters")
-	private String mailBody;
+	private String model;
 
-	//
-	private String mailFrom;
-
-	//
-	private String mailToAddress;
-
-	//
-	private String mailCc;
-
-	//
-	private String mailBcc;
-	
-	//
-	@Column(columnDefinition = "MEDIUMTEXT CHARACTER SET utf8mb4")
-	@Size(min = 1, max = 10000, message = " you must use between 1 and 10000 characters")
-	private String mailSentHeader;
-	
 	//
 	private String comments;
 
