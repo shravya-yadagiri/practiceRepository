@@ -1,0 +1,200 @@
+{
+	"info": {
+		"_postman_id": "c6b25db4-1da3-4010-9bea-382ca9980171",
+		"name": "MailSender",
+		"description": "Contains all end points related to OAuth2 server",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "localhost:8085/mail-sender/api/v1/mailServerDetails/create",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"organizationId\":\"organizationId1\",\n\t\"mailHost\":\"west.EXCH081.serverdata.net\",\n\t\"mailPort\":\"465\",\n\t\"mailUsername\":\"demo@prutech.com\",\n\t\"mailPassword\":\"INDoffice#2018\",\n\t\"mailSmtpAuth\":\"true\",\n\t\"mailDebug\":\"*\",\n\t\"mailSmtpConnectiontimeout\":\"5000\",\n\t\"mailSmtpTimeout\":\"5000\",\n\t\"mailSmtpWritetimeout\":\"5000\",\n\t\"mailSmtpSslTrust\":\"*\",\n\t\"mailFromMailId\":\"support@prutech.com\",\n\t\"createdBy\":\"Sai1\"\n}"
+				},
+				"url": {
+					"raw": "localhost:8085/mail-sender/api/v1/mailServerDetails/create",
+					"host": [
+						"localhost"
+					],
+					"port": "8085",
+					"path": [
+						"mail-sender",
+						"api",
+						"v1",
+						"mailServerDetails",
+						"create"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "localhost:8085/mail-sender/api/v1/template/create",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"organizationId\":\"organizationId1\",\n\t\"action\":\"action1\",\n\t\"mailSubject\":\"U3ViamVjdDEgLSAke3ZhcmlhYmxlMX0=\",\n\t\"mailBody\":\"Qm9keTEgLSAke3ZhcmlhYmxlMn0=\",\n\t\"mailCc\":\"kvsairkishnakodapaka@gmail.com\",\n\t\"mailBcc\":\"kvsaikrishna.iiitn@gmail.com\",\n\t\"createdBy\":\"Sai1\"\n}"
+				},
+				"url": {
+					"raw": "localhost:8085/mail-sender/api/v1/mailTemplate/create",
+					"host": [
+						"localhost"
+					],
+					"port": "8085",
+					"path": [
+						"mail-sender",
+						"api",
+						"v1",
+						"mailTemplate",
+						"create"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "localhost:8085/mail-sender/api/v1/mailSender/sendSimpleMail",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"organizationId\":\"organizationId1\",\n\t\"action\":\"action1\",\n\t\"model\":\n\t{\n\t\t\"toAddress\":[\"saikrishna.kodapaka@prutech.com\"],\n\t\t\"variable1\":\"Variable1\",\n\t\t\"variable2\":\"Variable2\"\n\t}\n}"
+				},
+				"url": {
+					"raw": "localhost:8085/mail-sender/api/v1/mailSender/sendMail",
+					"host": [
+						"localhost"
+					],
+					"port": "8085",
+					"path": [
+						"mail-sender",
+						"api",
+						"v1",
+						"mailSender",
+						"sendMail"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "localhost:8085/mail-sender/api/v1/mailRecoveryProducer/loadAllRecoveryMailsIntoActiveMQ",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "localhost:8085/mail-sender/api/v1/mailRecoveryProducer/loadAllRecoveryMailsIntoActiveMQ",
+					"host": [
+						"localhost"
+					],
+					"port": "8085",
+					"path": [
+						"mail-sender",
+						"api",
+						"v1",
+						"mailRecoveryProducer",
+						"loadAllRecoveryMailsIntoActiveMQ"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "localhost:8085/mail-sender/api/v1/mailSenderProducer/sendSimpleMail",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"organizationId\":\"organizationId1\",\n\t\"action\":\"action1\",\n\t\"model\":\n\t{\n\t\t\"toAddress\":[\"saikrishna.kodapaka@prutech.com\"],\n\t\t\"variable1\":\"Variable1X\",\n\t\t\"variable2\":\"Variable2X\"\n\t}\n}"
+				},
+				"url": {
+					"raw": "localhost:8085/mail-sender/api/v1/mailSenderProducer/sendSimpleMail",
+					"host": [
+						"localhost"
+					],
+					"port": "8085",
+					"path": [
+						"mail-sender",
+						"api",
+						"v1",
+						"mailSenderProducer",
+						"sendSimpleMail"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "localhost:8085/mail-sender/api/v1/mailRecoveryJobSchedule/scheduleRecoveryJob?jobCronParameters=0 0/1 * 1/1 * ? *",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "localhost:8085/mail-sender/api/v1/mailRecoveryJobSchedule/scheduleRecoveryJob?jobCronParameters=0 0/1 * 1/1 * ? *",
+					"host": [
+						"localhost"
+					],
+					"port": "8085",
+					"path": [
+						"mail-sender",
+						"api",
+						"v1",
+						"mailRecoveryJobSchedule",
+						"scheduleRecoveryJob"
+					],
+					"query": [
+						{
+							"key": "jobCronParameters",
+							"value": "0 0/1 * 1/1 * ? *"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
